@@ -1,0 +1,174 @@
+
+> studylog-api@1.0.0 test
+> newman run postman/StudyLog.postman_collection.json -e postman/StudyLog-Local.postman_environment.json --reporters cli,junit --reporter-junit-export reports/results.xml
+
+newman
+
+StudyLog API Tests
+
+❏ 1. Health and authentication
+↳ Health check is public
+  GET http://localhost:4000/health [200 OK, 178B, 23ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 200
+  ✓  Reports ok
+
+↳ Rejects request with no API key
+  GET http://localhost:4000/api/sessions [401 Unauthorized, 211B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 401
+  ✓  Explains the problem
+
+↳ Rejects request with wrong API key
+  GET http://localhost:4000/api/sessions [401 Unauthorized, 211B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 401
+
+❏ 2. Session lifecycle (CRUD)
+↳ Create a study session
+  POST http://localhost:4000/api/sessions [201 Created, 413B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 201 Created
+  ✓  Matches the session schema
+  ✓  Echoes the submitted values
+  ✓  Location header points to the new session
+
+↳ Fetch the session by id
+  GET http://localhost:4000/api/sessions/e24aff12-1fb0-4731-9681-b5408d8b692c [200 OK, 346B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 200
+  ✓  Returns the same session
+
+↳ Update minutes with PATCH
+  PATCH http://localhost:4000/api/sessions/e24aff12-1fb0-4731-9681-b5408d8b692c [200 OK, 346B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 200
+  ✓  Minutes changed
+  ✓  Other fields untouched
+
+↳ Filter list by subject (case-insensitive)
+  GET http://localhost:4000/api/sessions?subject=cse%20464 [200 OK, 348B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 200 and an array
+  ✓  Contains the created session
+  ✓  Only CSE 464 sessions returned
+
+↳ Create a second session for stats
+  POST http://localhost:4000/api/sessions [201 Created, 376B, 4ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 201 Created
+  ✓  notes defaults to empty string
+
+↳ Stats add up to the session list
+  GET http://localhost:4000/api/stats [200 OK, 268B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 200
+  GET http://localhost:4000/api/sessions [200 OK, 495B, 7ms]
+  ✓  totalSessions equals list length
+  ✓  totalMinutes equals sum of minutes
+  ✓  topSubject has the most minutes
+
+❏ 3. Validation (negative tests)
+↳ Missing subject is rejected
+  POST http://localhost:4000/api/sessions [400 Bad Request, 250B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+  ✓  Names the bad field
+
+↳ Minutes sent as a string is rejected
+  POST http://localhost:4000/api/sessions [400 Bad Request, 260B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+  ✓  Names the bad field
+
+↳ Minutes just over the limit (601) is rejected
+  POST http://localhost:4000/api/sessions [400 Bad Request, 260B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+
+↳ Minutes at the limit (600) is accepted
+  POST http://localhost:4000/api/sessions [201 Created, 376B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 201
+
+↳ Impossible date (Feb 30) is rejected
+  POST http://localhost:4000/api/sessions [400 Bad Request, 261B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+  ✓  Names the bad field
+
+↳ Malformed JSON body is rejected
+  POST http://localhost:4000/api/sessions [400 Bad Request, 207B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+  ✓  Says the JSON is invalid
+
+↳ PATCH with an unknown field is rejected
+  PATCH http://localhost:4000/api/sessions/e24aff12-1fb0-4731-9681-b5408d8b692c [400 Bad Request, 237B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+  ✓  Lists the unknown field
+
+↳ Unknown session id returns 404
+  GET http://localhost:4000/api/sessions/does-not-exist [404 Not Found, 199B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 404
+
+❏ 4. Cleanup
+↳ Delete the first session
+  DELETE http://localhost:4000/api/sessions/e24aff12-1fb0-4731-9681-b5408d8b692c [204 No Content, 111B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Status 204 No Content
+
+↳ Deleted session is gone
+  GET http://localhost:4000/api/sessions/e24aff12-1fb0-4731-9681-b5408d8b692c [404 Not Found, 199B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 404
+
+↳ Delete the second session
+  DELETE http://localhost:4000/api/sessions/0a07b727-299a-40c5-9787-1e4f80ea1520 [204 No Content, 111B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Status 204 No Content
+
+↳ Delete the boundary session
+  DELETE http://localhost:4000/api/sessions/3bffff4e-726a-4913-a8af-6256deddf83e [204 No Content, 111B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Status 204 No Content
+
+┌─────────────────────────┬─────────────────┬─────────────────┐
+│                         │        executed │          failed │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              iterations │               1 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│                requests │              22 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│            test-scripts │              42 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│      prerequest-scripts │               0 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              assertions │              79 │               0 │
+├─────────────────────────┴─────────────────┴─────────────────┤
+│ total run duration: 392ms                                   │
+├─────────────────────────────────────────────────────────────┤
+│ total data received: 2.06kB (approx)                        │
+├─────────────────────────────────────────────────────────────┤
+│ average response time: 2ms [min: 1ms, max: 23ms, s.d.: 4ms] │
+└─────────────────────────────────────────────────────────────┘

@@ -1,0 +1,193 @@
+newman
+
+StudyLog API Tests
+
+❏ 1. Health and authentication
+↳ Health check is public
+  GET http://localhost:4001/health [200 OK, 178B, 26ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 200
+  ✓  Reports ok
+
+↳ Rejects request with no API key
+  GET http://localhost:4001/api/sessions [401 Unauthorized, 211B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 401
+  ✓  Explains the problem
+
+↳ Rejects request with wrong API key
+  GET http://localhost:4001/api/sessions [401 Unauthorized, 211B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 401
+
+❏ 2. Session lifecycle (CRUD)
+↳ Create a study session
+  POST http://localhost:4001/api/sessions [201 Created, 413B, 3ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 201 Created
+  ✓  Matches the session schema
+  ✓  Echoes the submitted values
+  ✓  Location header points to the new session
+
+↳ Fetch the session by id
+  GET http://localhost:4001/api/sessions/2c3a6a9e-ba27-42bb-b9b9-2dc0b9ba6634 [200 OK, 346B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 200
+  ✓  Returns the same session
+
+↳ Update minutes with PATCH
+  PATCH http://localhost:4001/api/sessions/2c3a6a9e-ba27-42bb-b9b9-2dc0b9ba6634 [200 OK, 346B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 200
+  ✓  Minutes changed
+  ✓  Other fields untouched
+
+↳ Filter list by subject (case-insensitive)
+  GET http://localhost:4001/api/sessions?subject=cse%20464 [200 OK, 348B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 200 and an array
+  ✓  Contains the created session
+  ✓  Only CSE 464 sessions returned
+
+↳ Create a second session for stats
+  POST http://localhost:4001/api/sessions [201 Created, 376B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 201 Created
+  ✓  notes defaults to empty string
+
+↳ Stats add up to the session list
+  GET http://localhost:4001/api/stats [200 OK, 268B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 200
+  GET http://localhost:4001/api/sessions [200 OK, 495B, 9ms]
+  ✓  totalSessions equals list length
+  ✓  totalMinutes equals sum of minutes
+  ✓  topSubject has the most minutes
+
+❏ 3. Validation (negative tests)
+↳ Missing subject is rejected
+  POST http://localhost:4001/api/sessions [400 Bad Request, 250B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+  ✓  Names the bad field
+
+↳ Minutes sent as a string is rejected
+  POST http://localhost:4001/api/sessions [201 Created, 377B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  1. Status 400
+  2. Names the bad field
+
+↳ Minutes just over the limit (601) is rejected
+  POST http://localhost:4001/api/sessions [400 Bad Request, 260B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+
+↳ Minutes at the limit (600) is accepted
+  POST http://localhost:4001/api/sessions [400 Bad Request, 260B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  3. Status 201
+
+↳ Impossible date (Feb 30) is rejected
+  POST http://localhost:4001/api/sessions [400 Bad Request, 261B, 2ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+  ✓  Names the bad field
+
+↳ Malformed JSON body is rejected
+  POST http://localhost:4001/api/sessions [400 Bad Request, 207B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+  ✓  Says the JSON is invalid
+
+↳ PATCH with an unknown field is rejected
+  PATCH http://localhost:4001/api/sessions/2c3a6a9e-ba27-42bb-b9b9-2dc0b9ba6634 [400 Bad Request, 237B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 400
+  ✓  Lists the unknown field
+
+↳ Unknown session id returns 404
+  GET http://localhost:4001/api/sessions/does-not-exist [404 Not Found, 199B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 404
+
+❏ 4. Cleanup
+↳ Delete the first session
+  DELETE http://localhost:4001/api/sessions/2c3a6a9e-ba27-42bb-b9b9-2dc0b9ba6634 [204 No Content, 111B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Status 204 No Content
+
+↳ Deleted session is gone
+  GET http://localhost:4001/api/sessions/2c3a6a9e-ba27-42bb-b9b9-2dc0b9ba6634 [404 Not Found, 199B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  ✓  Status 404
+
+↳ Delete the second session
+  DELETE http://localhost:4001/api/sessions/2be2edc1-0f3c-46d5-b1aa-28291399b416 [204 No Content, 111B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Status 204 No Content
+
+↳ Delete the boundary session
+  DELETE http://localhost:4001/api/sessions/null [404 Not Found, 199B, 1ms]
+  ✓  Responds in under 500 ms
+  ✓  Content-Type is JSON
+  4. Status 204 No Content
+
+┌─────────────────────────┬─────────────────┬─────────────────┐
+│                         │        executed │          failed │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              iterations │               1 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│                requests │              22 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│            test-scripts │              42 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│      prerequest-scripts │               0 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              assertions │              80 │               4 │
+├─────────────────────────┴─────────────────┴─────────────────┤
+│ total run duration: 410ms                                   │
+├─────────────────────────────────────────────────────────────┤
+│ total data received: 2.09kB (approx)                        │
+├─────────────────────────────────────────────────────────────┤
+│ average response time: 3ms [min: 1ms, max: 26ms, s.d.: 5ms] │
+└─────────────────────────────────────────────────────────────┘
+
+  #  failure         detail                                                                           
+                                                                                                      
+ 1.  AssertionError  Status 400                                                                       
+                     expected response to have status code 400 but got 201                            
+                     at assertion:0 in test-script                                                    
+                     inside "3. Validation (negative tests) / Minutes sent as a string is rejected"   
+                                                                                                      
+ 2.  TypeError       Names the bad field                                                              
+                     Cannot read properties of undefined (reading 'join')                             
+                     at assertion:1 in test-script                                                    
+                     inside "3. Validation (negative tests) / Minutes sent as a string is rejected"   
+                                                                                                      
+ 3.  AssertionError  Status 201                                                                       
+                     expected response to have status code 201 but got 400                            
+                     at assertion:0 in test-script                                                    
+                     inside "3. Validation (negative tests) / Minutes at the limit (600) is accepted" 
+                                                                                                      
+ 4.  AssertionError  Status 204 No Content                                                            
+                     expected response to have status code 204 but got 404                            
+                     at assertion:0 in test-script                                                    
+                     inside "4. Cleanup / Delete the boundary session"                                

@@ -1,0 +1,14 @@
+{
+  "name": "studylog-api",
+  "version": "1.0.0",
+  "description": "Small REST API for logging study sessions, with a Postman/Newman test suite",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "test": "newman run postman/StudyLog.postman_collection.json -e postman/StudyLog-Local.postman_environment.json --reporters cli,junit,htmlextra --reporter-junit-export reports/results.xml --reporter-htmlextra-export reports/report.html --reporter-htmlextra-title \"StudyLog API Test Report\""
+  },
+  "devDependencies": {
+    "newman": "^6.2.1",
+    "newman-reporter-htmlextra": "^1.23.1"
+  }
+}
